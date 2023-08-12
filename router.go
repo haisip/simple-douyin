@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"simple-douyin/controller"
-	"simple-douyin/middleware"
 )
 
 func initRouter(r *gin.Engine) {
@@ -12,18 +11,19 @@ func initRouter(r *gin.Engine) {
 	// 公共文件夹文件目录
 	r.Static("/static", "./public")
 
-	// todo 不需要认证的API添加到 apiRouter
 	apiRouter := r.Group("/douyin")
-	apiRouter.GET("/feed/", controller.Feed)
-	apiRouter.POST("/user/login/", controller.Login)
+	// todo 不需要认证的API添加到 apiRouter
 	apiRouter.POST("/user/register/", controller.Register)
-	apiRouter.GET("/user/", controller.UserInfo)
+	apiRouter.POST("/user/login/", controller.Login)
+	//apiRouter.GET("/user/", controller.UserInfo)
+	//apiRouter.GET("/feed/", controller.Feed)
 
 	// todo 需要认证的api 添加到 protectedApiRouter
-	protectedApiRouter := apiRouter.Group("/", middleware.TokenAuthMiddleware())
-	protectedApiRouter.POST("/favorite/list/", controller.FavoriteList)
-	protectedApiRouter.POST("/publish/action/", controller.Publish)
-	protectedApiRouter.GET("/publish/list/", controller.PublishList)
+	//protectedApiRouter := apiRouter.Group("/", middleware.TokenAuthMiddleware())
+	// 添加 handler
+	//protectedApiRouter.POST("/favorite/list/", controller.FavoriteList)
+	//protectedApiRouter.POST("/publish/action/", controller.Publish)
+	//protectedApiRouter.GET("/publish/list/", controller.PublishList)
 
 	//// extra apis - I
 	//apiRouter.POST("/favorite/action/", controller.FavoriteAction)

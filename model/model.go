@@ -7,25 +7,25 @@ import (
 
 // User 定义User结构体，对应user表
 type User struct {
-	ID              int64     `gorm:"primaryKey;autoIncrement;not null"` // 主键、自增、不为空
-	Name            string    `gorm:"unique;not null"`                   // 唯一索引、不为空
-	Password        string    `gorm:""`
-	FollowCount     int32     `gorm:"default:0;not null"`                               // 默认0、不为空
-	FollowerCount   int32     `gorm:"default:0;not null"`                               // 默认0、不为空
-	Avatar          string    `gorm:""`                                                 // 无约束
-	BackgroundImage string    `gorm:""`                                                 // 无约束
-	Signature       string    `gorm:""`                                                 // 无约束
-	TotalFavorited  int32     `gorm:"default:0;not null"`                               // 默认0、不为空
-	WorkCount       int32     `gorm:"default:0;not null"`                               // 默认0、不为空
-	FavoriteCount   int32     `gorm:"default:0;not null"`                               // 默认0、不为空
-	CreateAt        time.Time `gorm:"type:datetime;default:CURRENT_TIMESTAMP;not null"` // 默认当前时间
-	DelFlag         bool      `gorm:"default:0;not null"`                               // 0正常 1删除
+	ID              int64     `gorm:"primaryKey;autoIncrement;not null" json:"id"`               // 主键、自增、不为空
+	Name            string    `gorm:"unique;not null" json:"name"`                               // 唯一索引、不为空
+	Password        string    `gorm:"" json:"-"`                                                 // 忽略密码字段
+	FollowCount     int32     `gorm:"default:0;not null" json:"follow_count"`                    // 默认0、不为空
+	FollowerCount   int32     `gorm:"default:0;not null" json:"follower_count"`                  // 默认0、不为空
+	Avatar          string    `gorm:"" json:"avatar,omitempty"`                                  // 如果为空则忽略
+	BackgroundImage string    `gorm:"" json:"background_image,omitempty"`                        // 如果为空则忽略
+	Signature       string    `gorm:"" json:"signature,omitempty"`                               // 如果为空则忽略
+	TotalFavorited  int32     `gorm:"default:0;not null" json:"-"`                               // 忽略总收藏数字段
+	WorkCount       int32     `gorm:"default:0;not null" json:"-"`                               // 忽略作品数字段
+	FavoriteCount   int32     `gorm:"default:0;not null" json:"-"`                               // 忽略收藏数字段
+	CreateAt        time.Time `gorm:"type:datetime;default:CURRENT_TIMESTAMP;not null" json:"-"` // 忽略创建时间字段
+	DelFlag         bool      `gorm:"default:0;not null" json:"-"`                               // 忽略删除标志字段
 
-	Videos          []Video     `gorm:"foreignKey:AuthorID"` // 关联视频表，外键为AuthorID
-	Comments        []Comment   `gorm:"foreignKey:UserID"`   // 关联评论表，外键为UserID
-	Followers       []UserUser  `gorm:"foreignKey:Followed"` // 关联用户用户表，外键为Follower 粉丝
-	Followeds       []UserUser  `gorm:"foreignKey:Follower"` // 关联用户用户表，外键为Followed 关注
-	FavoritedVideos []UserVideo `gorm:"foreignKey:UserID"`   // 关联用户视频表，外键为UserID
+	Videos          []Video     `gorm:"foreignKey:AuthorID" json:"-"` // 忽略视频关联字段
+	Comments        []Comment   `gorm:"foreignKey:UserID" json:"-"`   // 忽略评论关联字段
+	Followers       []UserUser  `gorm:"foreignKey:Followed" json:"-"` // 忽略粉丝关联字段
+	Followeds       []UserUser  `gorm:"foreignKey:Follower" json:"-"` // 忽略关注关联字段
+	FavoritedVideos []UserVideo `gorm:"foreignKey:UserID" json:"-"`   // 忽略收藏视频关联字段
 }
 
 // Video 定义Video结构体，对应video表

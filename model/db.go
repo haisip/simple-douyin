@@ -7,11 +7,15 @@ import (
 )
 
 var DB *gorm.DB
+var dsn string
+
+func init() {
+	dsn = config.GetConfig().DatabaseURL
+}
 
 func InitDB() error {
-	dsn := config.GetConfig().DatabaseURL
 	//db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})  // sqlite
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{}) // mysql
 	if err != nil {
 		return err
 	}

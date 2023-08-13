@@ -1,14 +1,29 @@
-clone后注意修改`config/config.go`中的数据库配置，程序第一次运行后会生成`config.json`配置文件
+clone后注意修改`config/config.go`中的数据库配置，程序第一次运行后会生成`config.json`配置文件，可以在`main`函数中进行修改
 
+如果要使用`sqlite`数据库，请修改`model/db`中`InitDB`函数的数据库初始化，但是提交的时候不需要将修改提交上来
 
+编写代码的时候注意`orm`中的字段响应到前端的`json`标签，避免响应敏感字段
 
-如果要使用`sqlite`数据库，请修改`model/db`中`InitDB`函数的数据库声明，但是提交的时候不需要将修改提交上来
+项目结构：
 
-1.
+~~~shell
+├─config // 配置文件和程序
+├─controller // 接口的handler
+├─middleware // 中间件:认证中间件...
+├─model // orm model和db连接
+├─public // 公开资源
+├─test // 单元测试文件
+├─utils // 工具包:jwt...
+├─router.go // 接口注册
+├─.gitignore // gitignore文件
+└─main.go // 工具包
 
-主分支指的是在整个软件生命周期内一直存在的分支，不允许删除commit的历史记录，更不允许删除分支。例如，master分支记录的就是整个软件的发布记录（换而言之，可以拉取其中的任一commit，无须修改即可对外发布），只能从release
+~~~
+
+参考下面的规范、但是不完全照搬
+
+1. 主分支指的是在整个软件生命周期内一直存在的分支，不允许删除commit的历史记录，更不允许删除分支。例如，master分支记录的就是整个软件的发布记录（换而言之，可以拉取其中的任一commit，无须修改即可对外发布），只能从release
 branches或hotfixes两个分支中合并，每次commit必须打标签。
 
-2.
+2. 辅助性分支则一般用于新功能开发、bug修复、新版QA，完成相应的功能之后可以删除这些分支，但是为了使整个开发过程有据可查，一般都予以保留。例如，已经对外发布的V0.1版需要紧急修复一个自测、内测均未发现的bug，则需要直接从master分支的V0.1开出一个紧急修复分支hotfixes-XXX，完成后同时并入master、develop两个主分支，hotfixes-XXX分支的存留取决于项目管理员。
 
-辅助性分支则一般用于新功能开发、bug修复、新版QA，完成相应的功能之后可以删除这些分支，但是为了使整个开发过程有据可查，一般都予以保留。例如，已经对外发布的V0.1版需要紧急修复一个自测、内测均未发现的bug，则需要直接从master分支的V0.1开出一个紧急修复分支hotfixes-XXX，完成后同时并入master、develop两个主分支，hotfixes-XXX分支的存留取决于项目管理员。

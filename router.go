@@ -3,11 +3,10 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"simple-douyin/controller"
+	"simple-douyin/middleware"
 )
 
 func initRouter(r *gin.Engine) {
-	// todo 使用中间件做用户认证，需要token的API请添加到protectedApiRouter中
-
 	// 公共文件夹文件目录
 	r.Static("/static", "./public")
 
@@ -15,11 +14,13 @@ func initRouter(r *gin.Engine) {
 	// todo 不需要认证的API添加到 apiRouter
 	apiRouter.POST("/user/register/", controller.Register)
 	apiRouter.POST("/user/login/", controller.Login)
-	//apiRouter.GET("/user/", controller.UserInfo)
 	//apiRouter.GET("/feed/", controller.Feed)
 
-	// todo 需要认证的api 添加到 protectedApiRouter
-	//protectedApiRouter := apiRouter.Group("/", middleware.TokenAuthMiddleware())
+	// todo 使用中间件做用户认证，需要token的API请添加到protectedApiRouter中
+	// todo 需要认证的 api 添加到 protectedApiRouter
+	protectedApiRouter := apiRouter.Group("/", middleware.TokenAuthMiddleware())
+	protectedApiRouter.GET("/user/", controller.UserInfo)
+
 	// 添加 handler
 	//protectedApiRouter.POST("/favorite/list/", controller.FavoriteList)
 	//protectedApiRouter.POST("/publish/action/", controller.Publish)

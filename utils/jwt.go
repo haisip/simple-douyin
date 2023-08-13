@@ -8,10 +8,15 @@ import (
 	"time"
 )
 
+var JwtSecretByte []byte
 var JwtSecret string
+var JetExp time.Duration
 
 func init() {
-	JwtSecret = config.GetConfig().JWTSecret
+	jwtConfig := config.GetConfig()
+	JwtSecret = jwtConfig.JWTSecret
+	JwtSecretByte = []byte(jwtConfig.JWTSecret)
+	JetExp = time.Duration(jwtConfig.JWTExp)
 }
 
 type UserCustomClaims struct {
@@ -37,7 +42,7 @@ func (c *UserCustomClaims) Valid() error {
 
 func GenerateToken(user *model.User) (string, error) {
 	nowTime := time.Now()
-	expireTime := nowTime.Add(time.Second)
+	expireTime := nowTime.Add(time.Second * JetExp)
 	claims := UserCustomClaims{
 		ID:       user.ID,
 		Username: user.Name,
@@ -45,19 +50,19 @@ func GenerateToken(user *model.User) (string, error) {
 			ExpiresAt: expireTime.Unix(),
 		},
 	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &claims).SignedString([]byte(JwtSecret))
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &claims).SignedString(JwtSecretByte)
 	return token, err
 }
 
 func ParseToken(tokenString string) (int64, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &UserCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return JwtSecret, nil
+		return JwtSecretByte, nil
 	})
 	if err != nil {
 		return 0, err
 	}
 	if claims, ok := token.Claims.(*UserCustomClaims); ok && token.Valid { // 如果解析成功并且token有效
-		return claims.ID, nil // 从claims中获取用户ID
+		return claims.ID, nil
 	}
 	return 0, err
 }

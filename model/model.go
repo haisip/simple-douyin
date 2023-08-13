@@ -60,11 +60,13 @@ type Comment struct {
 
 // UserUser 定义UserUser结构体，对应user_user表
 type UserUser struct {
-	ID           int64 `gorm:"primaryKey;autoIncrement;not null"` // 主键自增id、不为空
-	Follower     int64 `gorm:"uniqueIndex:er_ed_ui;not null"`     // 外键、联合唯一索引er_ed_ui、不为空
-	Followed     int64 `gorm:"uniqueIndex:er_ed_ui;not null"`     // 外键、联合唯一索引er_ed_ui、不为空
-	FollowerUser User  `gorm:"foreignKey:Follower"`               // 关联用户表，外键为Follower
-	FollowedUser User  `gorm:"foreignKey:Followed"`               // 关联用户表，外键为Followed
+	ID       int64 `gorm:"primaryKey;autoIncrement;not null"` // 主键自增id、不为空
+	Follower int64 `gorm:"uniqueIndex:er_ed_ui;not null"`     // 外键、联合唯一索引er_ed_ui、不为空
+	Followed int64 `gorm:"uniqueIndex:er_ed_ui;not null"`     // 外键、联合唯一索引er_ed_ui、不为空
+	Flag     bool  `gorm:"default:1;not null"`                // 字段为1表示关注Follower 关注 Followed
+
+	FollowerUser User `gorm:"foreignKey:Follower"` // 关联用户表，外键为Follower
+	FollowedUser User `gorm:"foreignKey:Followed"` // 关联用户表，外键为Followed
 }
 
 // UserVideo 定义UserVideo结构体，对应user_video表
@@ -72,6 +74,7 @@ type UserVideo struct {
 	ID      int64 `gorm:"primaryKey;autoIncrement;not null"`  // 主键自增id
 	UserID  int64 `gorm:"uniqueIndex:user_video_ui;not null"` // 联合唯一索引user_video_ui、不为空
 	VideoID int64 `gorm:"uniqueIndex:user_video_ui;not null"` // 联合唯一索引user_video_ui、不为空
+	Flag    bool  `gorm:"default:1;not null"`                 // 字段为1表示 UserID 喜欢 VideoID
 
 	User  User  `gorm:"foreignKey:UserID"`  // 关联用户表，外键为UserID
 	Video Video `gorm:"foreignKey:VideoID"` // 关联视频表，外键为VideoID

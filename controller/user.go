@@ -12,8 +12,8 @@ import (
 )
 
 type UsnPwdRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `form:"username"`
+	Password string `form:"password"`
 }
 
 type UserLoginResponse struct {
@@ -24,7 +24,7 @@ type UserLoginResponse struct {
 
 func Login(c *gin.Context) {
 	var loginRequest UsnPwdRequest
-	if err := c.ShouldBindJSON(&loginRequest); err != nil {
+	if err := c.ShouldBindQuery(&loginRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -61,7 +61,7 @@ func Login(c *gin.Context) {
 
 func Register(c *gin.Context) {
 	var usnPwdRequest UsnPwdRequest
-	if err := c.ShouldBindJSON(&usnPwdRequest); err != nil {
+	if err := c.ShouldBindQuery(&usnPwdRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -112,9 +112,18 @@ func UserInfo(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id"})
 		return
 	}
+	CurrentUserID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user not exist"})
+	}
 
 	var user model.User
-	if err := model.DB.First(&user, userID).Error; err != nil {
+
+	if err := model.DB.Table("user").
+		Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").
+		Joins("LEFT JOIN user_user AS uu ON uu.followed = ?  AND uu.follower = ?", userID, CurrentUserID).
+		Where("user.id = ?", userID).
+		First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, Response{StatusCode: 1, StatusMsg: "User not found"})
 			return

@@ -13,15 +13,16 @@ func main() {
 	// 下面这一行用于保存配置到json文件，但是似乎不用配置文件也行（使用config.go中的配置）
 	_ = config.SaveConfigToFile()
 
-	err := model.InitDB()
+	_, err := model.InitDB()
 	if err != nil {
 		return
 	}
 
 	r := gin.Default()
+	gin.SetMode(gin.TestMode)
 	initRouter(r)
 
-	err = r.Run()
+	err = r.Run("0.0.0.0:8080")
 	if err != nil {
 		return
 	}

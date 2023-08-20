@@ -10,13 +10,14 @@ type Config struct {
 	DatabaseURL string `json:"database_url"`
 	ServerPort  int    `json:"server_port"`
 	ServerHost  string `json:"server_host"`
-	JWTSecret   string `json:"jwt_secret"`
-	JWTExp      int64  `json:"jwt_exp"`
+
+	JWTSecret string `json:"jwt_secret"`
+	JWTExp    int64  `json:"jwt_exp"`
 }
 
 var (
 	defaultConfig = Config{
-		DatabaseURL: "mysql_database_url",
+		DatabaseURL: "root:604486@tcp(127.0.0.1:3306)/simple_douyin?charset=utf8mb4&parseTime=True&loc=Local",
 		ServerPort:  8080,
 		ServerHost:  "0.0.0.0",
 		JWTSecret:   "Cd18jPdmI6aUWEkmvZomzltcjhetm9MMn64HDEwFBYDpMlks2fZpZ0nGvWp0G9TuMcQeySuGi_P7jwQA3gh7zQ",

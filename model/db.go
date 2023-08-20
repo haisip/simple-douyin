@@ -13,18 +13,18 @@ func init() {
 	dsn = config.GetConfig().DatabaseURL
 }
 
-func InitDB() error {
-	//db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})  // sqlite
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{}) // mysql
+func InitDB() (*gorm.DB, error) {
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = db.AutoMigrate(&User{}, &Comment{}, &Video{},
-		&UserUser{}, &UserVideo{})
+	// 设置默认表选项，包括默认字符集和默认引擎
+	err = db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").
+		AutoMigrate(&User{}, &Comment{}, &Video{}, &UserUser{}, &UserVideo{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	DB = db
-	return nil
+	return db, nil
 }

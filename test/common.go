@@ -8,7 +8,6 @@ import (
 
 var serverAddr = "http://localhost:8080"
 var testUserA = "douyinTestUserA"
-var testUserB = "douyinTestUserB"
 
 func newExpect(t *testing.T) *httpexpect.Expect {
 	return httpexpect.WithConfig(httpexpect.Config{

@@ -8,20 +8,20 @@ import (
 
 // User 定义User结构体，对应user表
 type User struct {
-	ID              int64          `gorm:"primaryKey;autoIncrement;not null" json:"id"`                       // 主键、自增、不为空
-	Name            string         `gorm:"type:varchar(64);unique;not null" json:"name"`                      // 唯一索引、不为空
-	Password        string         `gorm:"type:varchar(255)" json:"-"`                                        // 忽略密码字段
-	FollowCount     int32          `gorm:"default:0;not null" json:"follow_count"`                            // 默认0、不为空
-	FollowerCount   int32          `gorm:"default:0;not null" json:"follower_count"`                          // 默认0、不为空
-	Avatar          string         `gorm:"type:varchar(255)" json:"avatar,omitempty"`                         // 如果为空则忽略
-	BackgroundImage string         `gorm:"type:varchar(255)" json:"background_image,omitempty"`               // 如果为空则忽略
-	Signature       string         `gorm:"type:varchar(255)" json:"signature,omitempty"`                      // 如果为空则忽略
-	TotalFavorited  int32          `gorm:"default:0;not null" json:"total_favorited"`                         // 忽略总收藏数字段
-	WorkCount       int32          `gorm:"default:0;not null" json:"work_count"`                              // 忽略作品数字段
-	FavoriteCount   int32          `gorm:"default:0;not null" json:"favorite_count"`                          // 忽略收藏数字段
-	CreateAt        time.Time      `gorm:"type:datetime;default:CURRENT_TIMESTAMP;not null" json:"create_at"` // 忽略创建时间字段
-	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`                                                    // 忽略删除标志字段
-	IsFollow        bool           `gorm:"<-:false" json:"is_follow"`
+	ID              int64          `gorm:"primaryKey;autoIncrement;not null" json:"id"`               // 主键、自增、不为空
+	Name            string         `gorm:"type:varchar(64);unique;not null" json:"name"`              // 唯一索引、不为空
+	Password        string         `gorm:"type:varchar(255)" json:"-"`                                // 忽略密码字段
+	FollowCount     int32          `gorm:"default:0;not null" json:"follow_count"`                    // 默认0、不为空
+	FollowerCount   int32          `gorm:"default:0;not null" json:"follower_count"`                  // 默认0、不为空
+	Avatar          string         `gorm:"type:varchar(255)" json:"avatar"`                           // 如果为空则忽略
+	BackgroundImage string         `gorm:"type:varchar(255)" json:"background_image"`                 // 如果为空则忽略
+	Signature       string         `gorm:"type:varchar(255)" json:"signature"`                        // 如果为空则忽略
+	TotalFavorited  int32          `gorm:"default:0;not null" json:"total_favorited"`                 // 忽略总收藏数字段
+	WorkCount       int32          `gorm:"default:0;not null" json:"work_count"`                      // 忽略作品数字段
+	FavoriteCount   int32          `gorm:"default:0;not null" json:"favorite_count"`                  // 忽略收藏数字段
+	CreateAt        time.Time      `gorm:"type:datetime;default:CURRENT_TIMESTAMP;not null" json:"-"` // 忽略创建时间字段
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`                                            // 忽略删除标志字段
+	IsFollow        bool           `gorm:"<-:false" json:"is_follow,omitempty"`                       //true-已关注，false-未关注
 
 	Videos          []Video     `gorm:"foreignKey:AuthorID" json:"-"` // 忽略视频关联字段
 	Comments        []Comment   `gorm:"foreignKey:UserID" json:"-"`   // 忽略评论关联字段
@@ -37,7 +37,7 @@ func (User) TableName() string {
 // Video 定义Video结构体，对应video表
 type Video struct {
 	ID            int64          `gorm:"primaryKey;autoIncrement;not null" json:"id"`                     // 主键、自增、不为空
-	AuthorID      int64          `gorm:"not null" json:"author_id"`                                       // 不为空
+	AuthorID      int64          `gorm:"not null" json:"-"`                                               // 不为空
 	PlayURL       string         `gorm:"type:varchar(255);not null" json:"play_url"`                      // 不为空
 	CoverURL      string         `gorm:"type:varchar(255);not null" json:"cover_url"`                     // 不为空
 	FavoriteCount int32          `gorm:"default:0;not null" json:"favorite_count"`                        // 默认0、不为空

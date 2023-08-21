@@ -16,10 +16,10 @@ type UsnPwdRequest struct {
 	Password string `form:"password"`
 }
 
-type UserLoginResponse struct {
+type UserTokenResponse struct {
 	Response
 	UserId int64  `json:"user_id,omitempty"`
-	Token  string `json:"token"`
+	Token  string `json:"token,omitempty"`
 }
 
 func Login(c *gin.Context) {
@@ -32,7 +32,7 @@ func Login(c *gin.Context) {
 	var user model.User
 	if result := model.DB.Where(&model.User{Name: loginRequest.Username}).First(&user); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, UserLoginResponse{
+			c.JSON(http.StatusOK, UserTokenResponse{
 				Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 			})
 			return
@@ -52,7 +52,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, UserLoginResponse{
+	c.JSON(http.StatusOK, UserTokenResponse{
 		Response: Response{StatusCode: 0, StatusMsg: ""},
 		UserId:   user.ID,
 		Token:    token,
@@ -87,7 +87,7 @@ func Register(c *gin.Context) {
 				return
 			}
 
-			c.JSON(http.StatusOK, UserLoginResponse{
+			c.JSON(http.StatusOK, UserTokenResponse{
 				Response: Response{StatusCode: 0, StatusMsg: ""},
 				UserId:   newUser.ID,
 				Token:    token,
@@ -103,7 +103,7 @@ func Register(c *gin.Context) {
 
 type UserInfoResponse struct {
 	Response
-	User model.User `json:"user"`
+	User model.User `json:"user,omitempty"`
 }
 
 func UserInfo(c *gin.Context) {

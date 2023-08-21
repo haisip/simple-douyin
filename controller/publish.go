@@ -7,9 +7,19 @@ import (
 	"gorm.io/gorm/clause"
 	"net/http"
 	"path/filepath"
+	"simple-douyin/config"
 	"simple-douyin/model"
 	"time"
 )
+
+var (
+	staticBaseUrl = ""
+)
+
+func init() {
+	configLocal := config.GetConfig()
+	staticBaseUrl = configLocal.StaticBaseUrl
+}
 
 func Publish(c *gin.Context) {
 	currentUserInter, _ := c.Get("user")
@@ -46,7 +56,7 @@ func Publish(c *gin.Context) {
 
 	video := model.Video{
 		AuthorID: currentUser.ID,
-		PlayURL:  "http://192.168.254.86:8080/static/" + finalName,
+		PlayURL:  staticBaseUrl + finalName,
 		CoverURL: "",
 		Title:    title,
 	}

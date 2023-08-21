@@ -10,7 +10,7 @@ var DB *gorm.DB
 var dsn string
 
 func init() {
-	dsn = config.GetConfig().DatabaseURL
+	dsn = config.GetConfig().DatabaseURI
 }
 
 func InitDB() (*gorm.DB, error) {

@@ -22,8 +22,8 @@ func init() {
 }
 
 func Publish(c *gin.Context) {
-	currentUserInter, _ := c.Get("user")
-	currentUser := currentUserInter.(model.User)
+	userID, _ := c.Get("user_id")
+	currentUserID := userID.(int64)
 	title := c.PostForm("title")
 	if title == "" {
 		c.JSON(http.StatusBadRequest, Response{StatusCode: 1, StatusMsg: "缺少title"})
@@ -55,13 +55,13 @@ func Publish(c *gin.Context) {
 	tx := model.DB.Begin()
 
 	video := model.Video{
-		AuthorID: currentUser.ID,
+		AuthorID: currentUserID,
 		PlayURL:  staticBaseUrl + finalName,
 		CoverURL: "",
 		Title:    title,
 	}
 	userVideo := model.UserVideo{
-		UserID: currentUser.ID,
+		UserID: currentUserID,
 		Flag:   true,
 	}
 	if err := tx.Clauses(clause.Insert{Modifier: "IGNORE"}).Create(&video).Error; err != nil {
@@ -83,7 +83,7 @@ func Publish(c *gin.Context) {
 }
 
 func PublishList(c *gin.Context) {
-	CurrentUserID, _ := c.Get("user_id")
+	currentUserID, _ := c.Get("user_id")
 	userID := c.Query("user_id")
 	if userID == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "missing query param ot value"})
@@ -96,7 +96,7 @@ func PublishList(c *gin.Context) {
 		Preload("Author", func(db *gorm.DB) *gorm.DB {
 			return db.
 				Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").
-				Joins("LEFT JOIN user_user AS uu ON  uu.followed = user.id  AND uu.follower = ?", CurrentUserID)
+				Joins("LEFT JOIN user_user AS uu ON  uu.followed = user.id  AND uu.follower = ?", currentUserID)
 		}).
 		Order("video.create_at DESC").
 		Where("video.author_id = ?", userID).

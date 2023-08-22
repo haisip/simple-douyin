@@ -21,7 +21,7 @@ type User struct {
 	FavoriteCount   int32          `gorm:"default:0;not null" json:"favorite_count"`                  // 忽略收藏数字段
 	CreateAt        time.Time      `gorm:"type:datetime;default:CURRENT_TIMESTAMP;not null" json:"-"` // 忽略创建时间字段
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`                                            // 忽略删除标志字段
-	IsFollow        bool           `gorm:"<-:false" json:"is_follow,omitempty"`                       //true-已关注，false-未关注
+	IsFollow        bool           `gorm:"<-:false" json:"is_follow"`                                 //true-已关注，false-未关注
 
 	Videos          []Video     `gorm:"foreignKey:AuthorID" json:"-"` // 忽略视频关联字段
 	Comments        []Comment   `gorm:"foreignKey:UserID" json:"-"`   // 忽略评论关联字段

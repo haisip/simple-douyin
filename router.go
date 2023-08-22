@@ -27,15 +27,12 @@ func initRouter(r *gin.Engine) {
 	protectedApiRouter.GET("/publish/list/", controller.PublishList)
 	protectedApiRouter.POST("/publish/action/", controller.Publish)
 
-	// 添加 handler
-	//protectedApiRouter.POST("/favorite/list/", controller.FavoriteList)
-
 	//// extra apis - I
-	//apiRouter.POST("/favorite/action/", controller.FavoriteAction)
-	//apiRouter.GET("/favorite/list/", controller.FavoriteList)
-	//apiRouter.POST("/comment/action/", controller.CommentAction)
-	//apiRouter.GET("/comment/list/", controller.CommentList)
-	//
+	protectedApiRouter.POST("/comment/action/", controller.CommentAction)   // 评论操作
+	protectedApiRouter.GET("/comment/list/", controller.CommentList)        // 评论列表
+	protectedApiRouter.POST("/favorite/action/", controller.FavoriteAction) // 赞操作
+	protectedApiRouter.GET("/favorite/list/", controller.FavoriteList)      // 喜欢列表
+
 	//// extra apis - II
 	//apiRouter.POST("/relation/action/", controller.RelationAction)
 	//apiRouter.GET("/relation/follow/list/", controller.FollowList)

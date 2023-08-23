@@ -14,7 +14,7 @@ func init() {
 }
 
 func InitDB() (*gorm.DB, error) {
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{PrepareStmt: true})
 	if err != nil {
 		return nil, err
 	}

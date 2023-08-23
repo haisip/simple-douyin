@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"net/http"
 	"simple-douyin/model"
 	"simple-douyin/utils"
@@ -12,8 +13,8 @@ import (
 )
 
 type UsnPwdRequest struct {
-	Username string `form:"username"`
-	Password string `form:"password"`
+	Username string `form:"username" binding:"required"`
+	Password string `form:"password" binding:"required,min=5"`
 }
 
 type UserTokenResponse struct {
@@ -66,39 +67,31 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	var user model.User
-	if err := model.DB.Where(&model.User{Name: usnPwdRequest.Username}).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(usnPwdRequest.Password), bcrypt.DefaultCost)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
-				return
-			}
-
-			newUser := model.User{Name: usnPwdRequest.Username, Password: string(hashedPassword)}
-			if err := model.DB.Create(&newUser).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
-				return
-			}
-
-			token, err := utils.GenerateToken(&newUser)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-				return
-			}
-
-			c.JSON(http.StatusOK, UserTokenResponse{
-				Response: Response{StatusCode: 0, StatusMsg: ""},
-				UserId:   newUser.ID,
-				Token:    token,
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(usnPwdRequest.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
 	}
 
-	c.JSON(http.StatusOK, Response{StatusCode: 1, StatusMsg: "User already exists"})
+	newUser := model.User{Name: usnPwdRequest.Username, Password: string(hashedPassword)}
+	result := model.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newUser)
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusOK, Response{StatusCode: 1, StatusMsg: "User already exists"})
+		return
+	}
+
+	token, err := utils.GenerateToken(&newUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, UserTokenResponse{
+		Response: Response{StatusCode: 0},
+		UserId:   newUser.ID,
+		Token:    token,
+	})
+	return
 }
 
 type UserInfoResponse struct {
@@ -118,7 +111,6 @@ func UserInfo(c *gin.Context) {
 	}
 
 	var user model.User
-
 	if err := model.DB.Table("user").
 		Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").
 		Joins("LEFT JOIN user_user AS uu ON uu.followed = ?  AND uu.follower = ?", userID, CurrentUserID).

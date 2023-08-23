@@ -12,9 +12,9 @@ import (
 	"strconv"
 )
 
-type UsnPwdRequest struct {
-	Username string `form:"username" binding:"required"`
-	Password string `form:"password" binding:"required,min=5"`
+type UsrnPwdRequest struct {
+	Username string `form:"username" binding:"required,min=5,max=64"`
+	Password string `form:"password" binding:"required,min=5,max=64"`
 }
 
 type UserTokenResponse struct {
@@ -24,15 +24,15 @@ type UserTokenResponse struct {
 }
 
 func Login(c *gin.Context) {
-	var loginRequest UsnPwdRequest
+	var loginRequest UsrnPwdRequest
 	if err := c.ShouldBindQuery(&loginRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var user model.User
-	if result := model.DB.Where(&model.User{Name: loginRequest.Username}).First(&user); result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	var loginUser model.User
+	if err := model.DB.Where(&model.User{Name: loginRequest.Username}).First(&loginUser).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, UserTokenResponse{
 				Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
 			})
@@ -42,12 +42,12 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(loginUser.Password), []byte(loginRequest.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "password error"})
 		return
 	}
 
-	token, err := utils.GenerateToken(&user)
+	token, err := utils.GenerateToken(&loginUser)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "token generation error"})
 		return
@@ -55,25 +55,25 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, UserTokenResponse{
 		Response: Response{StatusCode: 0, StatusMsg: ""},
-		UserId:   user.ID,
+		UserId:   loginUser.ID,
 		Token:    token,
 	})
 }
 
 func Register(c *gin.Context) {
-	var usnPwdRequest UsnPwdRequest
-	if err := c.ShouldBindQuery(&usnPwdRequest); err != nil {
+	var registerRequest UsrnPwdRequest
+	if err := c.ShouldBindQuery(&registerRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(usnPwdRequest.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(registerRequest.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
 	}
 
-	newUser := model.User{Name: usnPwdRequest.Username, Password: string(hashedPassword)}
+	newUser := model.User{Name: registerRequest.Username, Password: string(hashedPassword)}
 	result := model.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newUser)
 	if result.RowsAffected == 0 {
 		c.JSON(http.StatusOK, Response{StatusCode: 1, StatusMsg: "User already exists"})
@@ -100,22 +100,19 @@ type UserInfoResponse struct {
 }
 
 func UserInfo(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
+	targetUserID, err := strconv.ParseInt(c.Query("user_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id"})
 		return
 	}
-	CurrentUserID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user not exist"})
-	}
+	currentUserID, _ := c.Get("user_id")
 
-	var user model.User
+	var targetUser model.User
 	if err := model.DB.Table("user").
 		Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").
-		Joins("LEFT JOIN user_user AS uu ON uu.followed = ?  AND uu.follower = ?", userID, CurrentUserID).
-		Where("user.id = ?", userID).
-		First(&user).Error; err != nil {
+		Joins("LEFT JOIN user_user AS uu ON uu.followed = ?  AND uu.follower = ?", targetUserID, currentUserID).
+		Where("user.id = ?", targetUserID).
+		First(&targetUser).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, Response{StatusCode: 1, StatusMsg: "User not found"})
 			return
@@ -126,6 +123,6 @@ func UserInfo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, UserInfoResponse{
 		Response: Response{StatusCode: 0},
-		User:     user,
+		User:     targetUser,
 	})
 }

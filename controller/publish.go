@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"net/http"
 	"path/filepath"
 	"simple-douyin/config"
@@ -22,14 +21,13 @@ func init() {
 }
 
 func Publish(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	currentUserID := userID.(int64)
+	currentUserID := c.GetInt64("user_id")
 	title := c.PostForm("title")
 	if title == "" {
-		c.JSON(http.StatusBadRequest, Response{StatusCode: 1, StatusMsg: "缺少title"})
+		c.JSON(http.StatusBadRequest, Response{StatusCode: 1, StatusMsg: "miss title"})
 		return
 	}
-	fmt.Println(1)
+
 	data, err := c.FormFile("data")
 	if err != nil {
 		c.JSON(http.StatusOK, Response{
@@ -38,12 +36,10 @@ func Publish(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println(1)
 
 	finalName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(data.Filename)) // 使用时间戳防止重复
 	savePath := filepath.Join("./public/", finalName)
 
-	// todo 写入文件中
 	if err := c.SaveUploadedFile(data, savePath); err != nil {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: 1,
@@ -52,29 +48,22 @@ func Publish(c *gin.Context) {
 		return
 	}
 
-	tx := model.DB.Begin()
-
-	video := model.Video{
-		AuthorID: currentUserID,
-		PlayURL:  staticBaseUrl + finalName,
-		CoverURL: "",
-		Title:    title,
-	}
 	userVideo := model.UserVideo{
-		UserID: currentUserID,
-		Flag:   true,
+		User: model.User{
+			ID: currentUserID,
+		},
+		Video: model.Video{
+			AuthorID: currentUserID,
+			PlayURL:  staticBaseUrl + finalName,
+			CoverURL: "",
+			Title:    title,
+		},
+		Flag: true,
 	}
-	if err := tx.Clauses(clause.Insert{Modifier: "IGNORE"}).Create(&video).Error; err != nil {
-		tx.Rollback()
+	if err := model.DB.Create(&userVideo).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, "create error")
 		return
 	}
-	userVideo.VideoID = video.ID
-	if err := tx.Create(&userVideo).Error; err != nil {
-		tx.Rollback()
-		return
-	}
-
-	tx.Commit()
 
 	c.JSON(http.StatusOK, Response{
 		StatusCode: 0,
@@ -84,13 +73,13 @@ func Publish(c *gin.Context) {
 
 func PublishList(c *gin.Context) {
 	currentUserID, _ := c.Get("user_id")
-	userID := c.Query("user_id")
-	if userID == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "missing query param ot value"})
+	targetUserID := c.Query("user_id")
+	if targetUserID == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "missing query param ot user_id"})
 		return
 	}
 
-	// todo 获取用户的全部视频列表
+	//videoArr := make([]model.Video, 10)
 	var videoArr []model.Video
 	if err := model.DB.Table("video").
 		Preload("Author", func(db *gorm.DB) *gorm.DB {
@@ -99,7 +88,8 @@ func PublishList(c *gin.Context) {
 				Joins("LEFT JOIN user_user AS uu ON  uu.followed = user.id  AND uu.follower = ?", currentUserID)
 		}).
 		Order("video.create_at DESC").
-		Where("video.author_id = ?", userID).
+		Where("video.author_id = ?", targetUserID).
+		Debug().
 		Find(&videoArr).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return

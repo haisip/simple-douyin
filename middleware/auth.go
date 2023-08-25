@@ -8,11 +8,14 @@ import (
 )
 
 // todo 需要修改认证方式
-func authenticateUser(userID int64) (model.User, error) {
+func authenticateUser(userID int64) (*model.User, error) {
 	// todo redis 查询用户
 	// todo sql 数据库查询用户
 	// todo  用户放到redis
-	var user = model.User{ID: userID}
+	user, err := model.SelectUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 

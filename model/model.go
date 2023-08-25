@@ -8,16 +8,16 @@ import (
 // User 定义User结构体，对应user表
 type User struct {
 	ID              int64          `gorm:"primaryKey;autoIncrement;not null" json:"id"`  // 主键、自增、不为空
-	Name            string         `gorm:"type:varchar(64);unique;not null" json:"name"` // 唯一索引、不为空
+	Name            string         `gorm:"type:varchar(64);unique;not null" json:"name"` // 名称为唯一索引、不为空
 	Password        string         `gorm:"type:varchar(255)" json:"-"`                   // 忽略密码字段
 	FollowCount     int32          `gorm:"default:0;not null" json:"follow_count"`       // 默认0、不为空
 	FollowerCount   int32          `gorm:"default:0;not null" json:"follower_count"`     // 默认0、不为空
-	Avatar          string         `gorm:"type:varchar(255)" json:"avatar"`              // 如果为空则忽略
-	BackgroundImage string         `gorm:"type:varchar(255)" json:"background_image"`    // 如果为空则忽略
-	Signature       string         `gorm:"type:varchar(255)" json:"signature"`           // 如果为空则忽略
+	Avatar          string         `gorm:"type:varchar(255)" json:"avatar"`              // 用户头像地址
+	BackgroundImage string         `gorm:"type:varchar(255)" json:"background_image"`    // 用户背景图地址
+	Signature       string         `gorm:"type:varchar(255)" json:"signature"`           // 用户签名
 	TotalFavorited  int32          `gorm:"default:0;not null" json:"total_favorited"`    // 忽略总收藏数字段
-	WorkCount       int32          `gorm:"default:0;not null" json:"work_count"`         // 忽略作品数字段
-	FavoriteCount   int32          `gorm:"default:0;not null" json:"favorite_count"`     // 忽略收藏数字段
+	WorkCount       int32          `gorm:"default:0;not null" json:"work_count"`         // 作品数量
+	FavoriteCount   int32          `gorm:"default:0;not null" json:"favorite_count"`     // 收藏数
 	CreateAt        int64          `gorm:"autoCreateTime" json:"-"`                      // 忽略创建时间字段
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`                               // 忽略删除标志字段
 	IsFollow        bool           `gorm:"<-:false" json:"is_follow"`                    //true-已关注，false-未关注
@@ -42,7 +42,7 @@ type Video struct {
 	FavoriteCount int32          `gorm:"default:0;not null" json:"favorite_count"`    // 默认0、不为空
 	CommentCount  int32          `gorm:"default:0;not null" json:"comment_count"`     // 默认0、不为空
 	Title         string         `gorm:"type:varchar(255);not null" json:"title"`     // 不为空
-	CreateAt      int64          `gorm:"autoCreateTime" json:"-"`                     // 忽略创建时间字段
+	CreateAt      int64          `gorm:"autoCreateTime;index" json:"-"`               // 忽略创建时间字段
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`                              // 忽略删除标志字段                         // 0正常 1删除
 	IsFavorite    bool           `gorm:"<-:false" json:"is_favorite"`
 

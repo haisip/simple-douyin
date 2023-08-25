@@ -21,6 +21,7 @@ func init() {
 }
 
 func Publish(c *gin.Context) {
+	// todo 保存视频到静态目录，保存到数据库（新建video字段、user_video、更新user表作品数量）
 	currentUserID := c.GetInt64("user_id")
 	title := c.PostForm("title")
 	if title == "" {
@@ -36,6 +37,13 @@ func Publish(c *gin.Context) {
 		})
 		return
 	}
+	if filepath.Ext(data.Filename) != ".mp4" {
+		c.JSON(http.StatusOK, Response{
+			StatusCode: 1,
+			StatusMsg:  "Invalid file format. Only .mp4 files are allowed.",
+		})
+		return
+	}
 
 	finalName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(data.Filename)) // 使用时间戳防止重复
 	savePath := filepath.Join("./public/", finalName)
@@ -48,22 +56,23 @@ func Publish(c *gin.Context) {
 		return
 	}
 
-	userVideo := model.UserVideo{
-		User: model.User{
-			ID: currentUserID,
-		},
-		Video: model.Video{
-			AuthorID: currentUserID,
-			PlayURL:  staticBaseUrl + finalName,
-			CoverURL: "",
-			Title:    title,
-		},
-		Flag: true,
-	}
-	if err := model.DB.Create(&userVideo).Error; err != nil {
+	tx := model.DB.Begin()
+	if err := tx.Create(&model.Video{
+		AuthorID: currentUserID,
+		PlayURL:  staticBaseUrl + finalName,
+		CoverURL: "",
+		Title:    title,
+	}).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, "create error")
 		return
 	}
+	if err := tx.Model(&model.User{}).Where("id = ?", currentUserID).Update("work_count", gorm.Expr("work_count + ?", 1)).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, "update error")
+		return
+	}
+	tx.Commit()
 
 	c.JSON(http.StatusOK, Response{
 		StatusCode: 0,

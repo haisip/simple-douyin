@@ -5,19 +5,26 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"simple-douyin/model"
+	"strconv"
 	"time"
 )
 
+var maxVideoNum = 30
+
 func Feed(c *gin.Context) {
 	userID, _ := c.Get("user_id")
-	n := 30 // todo 建议写到配置文件
-	var videoArr []model.Video
+	lastTimeStr := c.Query("latest_time")
 
+	lastTime, _ := strconv.ParseInt(lastTimeStr, 10, 64)
+
+	videoArr := make([]model.Video, 30)
 	if userID == nil {
 		query := model.DB.Table("video").Preload("Author").
 			Order("video.create_at DESC").
-			Limit(n)
-
+			Limit(maxVideoNum)
+		if lastTime > 0 {
+			query = query.Where("video.create_at > ?", lastTime)
+		}
 		if err := query.Find(&videoArr).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 			return
@@ -32,7 +39,10 @@ func Feed(c *gin.Context) {
 			}).
 			Select("video.*, uv.flag AS is_favorite").
 			Order("video.create_at DESC").
-			Limit(n)
+			Limit(maxVideoNum)
+		if lastTime > 0 {
+			query = query.Where("video.create_at > ?", lastTime)
+		}
 
 		if err := query.
 			Find(&videoArr).Error; err != nil {

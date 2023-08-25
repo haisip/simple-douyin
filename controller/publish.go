@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	staticBaseUrl = ""
+	staticBaseUrl string
 )
 
 func init() {
@@ -88,8 +88,7 @@ func PublishList(c *gin.Context) {
 		return
 	}
 
-	//videoArr := make([]model.Video, 10)
-	var videoArr []model.Video
+	videoArr := make([]model.Video, 10)
 	if err := model.DB.Table("video").
 		Preload("Author", func(db *gorm.DB) *gorm.DB {
 			return db.

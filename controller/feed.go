@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
+	"simple-douyin/db"
 	"simple-douyin/model"
 	"strconv"
 	"time"
@@ -19,7 +20,7 @@ func Feed(c *gin.Context) {
 
 	videoArr := make([]model.Video, 30)
 	if userID == nil {
-		query := model.DB.Table("video").Preload("Author").
+		query := db.DB.Table("video").Preload("Author").
 			Order("video.create_at DESC").
 			Limit(maxVideoNum)
 		if lastTime > 0 {
@@ -30,7 +31,7 @@ func Feed(c *gin.Context) {
 			return
 		}
 	} else {
-		query := model.DB.Table("video").
+		query := db.DB.Table("video").
 			Joins("LEFT JOIN user_video AS uv ON video.id = uv.video_id AND uv.user_id = ? AND uv.flag = 1", userID).
 			Preload("Author", func(db *gorm.DB) *gorm.DB {
 				return db.

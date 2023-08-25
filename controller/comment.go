@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"simple-douyin/db"
 	"simple-douyin/model"
 	"strconv"
 )
@@ -31,7 +32,7 @@ func CommentAction(c *gin.Context) {
 		// todo 发布评论
 		content := c.Query("comment_text") // todo 做参数合法判断
 		comment := model.Comment{UserID: userId, VideoID: videoId, Content: content}
-		if err := model.DB.Create(&comment).Error; err == nil {
+		if err := db.DB.Create(&comment).Error; err == nil {
 			c.JSON(http.StatusOK, CommentActionResponse{
 				Response: Response{StatusCode: 0},
 				Comment:  comment,
@@ -56,12 +57,12 @@ func CommentList(c *gin.Context) {
 	videoID := c.Query("video_id") // todo 判断是否符合规范，这里没做任何处理
 
 	var comments []model.Comment
-	if err := model.DB.Preload("User"). // todo 优化异常处理
-		Where("video_id = ?", videoID).
-		Order("create_at DESC").
-		Debug().
-		Find(&comments).
-		Error; err != nil {
+	if err := db.DB.Preload("User"). // todo 优化异常处理
+						Where("video_id = ?", videoID).
+						Order("create_at DESC").
+						Debug().
+						Find(&comments).
+						Error; err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	} else {

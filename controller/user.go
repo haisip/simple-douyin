@@ -3,10 +3,10 @@ package controller
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"net/http"
+	"simple-douyin/db"
 	"simple-douyin/model"
 	"simple-douyin/utils"
 	"strconv"
@@ -31,7 +31,7 @@ func Login(c *gin.Context) {
 	}
 
 	var loginUser model.User
-	if err := model.DB.Where(&model.User{Name: loginRequest.Username}).First(&loginUser).Error; err != nil {
+	if err := db.DB.Where(&model.User{Name: loginRequest.Username}).First(&loginUser).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, UserTokenResponse{
 				Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
@@ -42,7 +42,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(loginUser.Password), []byte(loginRequest.Password)); err != nil {
+	if err := utils.CompareHashAndPassword([]byte(loginUser.Password), []byte(loginRequest.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "password error"})
 		return
 	}
@@ -67,14 +67,14 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(registerRequest.Password), bcrypt.DefaultCost)
+	hashedPassword, err := utils.GenerateFromPassword([]byte(registerRequest.Password))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
 	}
 
 	newUser := model.User{Name: registerRequest.Username, Password: string(hashedPassword)}
-	result := model.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newUser)
+	result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newUser)
 	if result.RowsAffected == 0 {
 		c.JSON(http.StatusOK, Response{StatusCode: 1, StatusMsg: "User already exists"})
 		return
@@ -105,10 +105,10 @@ func UserInfo(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id"})
 		return
 	}
-	currentUserID, _ := c.Get("user_id")
+	currentUserID := c.GetInt64("user_id")
 
 	var targetUser model.User
-	if err := model.DB.Table("user").
+	if err := db.DB.Table("user").
 		Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").
 		Joins("LEFT JOIN user_user AS uu ON uu.followed = ?  AND uu.follower = ?", targetUserID, currentUserID).
 		Where("user.id = ?", targetUserID).

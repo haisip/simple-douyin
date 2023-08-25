@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"simple-douyin/config"
+	"simple-douyin/db"
 	"simple-douyin/model"
 	"time"
 )
@@ -56,7 +57,7 @@ func Publish(c *gin.Context) {
 		return
 	}
 
-	tx := model.DB.Begin()
+	tx := db.DB.Begin()
 	if err := tx.Create(&model.Video{
 		AuthorID: currentUserID,
 		PlayURL:  staticBaseUrl + finalName,
@@ -89,7 +90,7 @@ func PublishList(c *gin.Context) {
 	}
 
 	videoArr := make([]model.Video, 10)
-	if err := model.DB.Table("video").
+	if err := db.DB.Table("video").
 		Preload("Author", func(db *gorm.DB) *gorm.DB {
 			return db.
 				Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").

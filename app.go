@@ -6,22 +6,32 @@ import (
 	"simple-douyin/middleware"
 )
 
+func createAndInitEngine() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+
+	middleware.InitGinLogWriter() // 设置日志输入到哪里
+	//r.Use(gin.LoggerWithFormatter(middleware.LogToFileFormatter()))  // 使用自己的formatter
+	r.Use(gin.Logger())
+	initRouter(r)
+	return r
+}
+
 func initRouter(r *gin.Engine) {
 	// 公共文件夹文件目录
-	// todo 配置文件添加 public文件夹路径
 	r.Static("/static", "./public")
 
 	apiRouter := r.Group("/douyin")
 
-	// todo 不需要认证的API添加到 apiRouter
+	// 不需要认证的API添加到 apiRouter
 	apiRouter.POST("/user/register/", controller.Register)
 	apiRouter.POST("/user/login/", controller.Login)
 
-	// todo token 作为参数但是不是非必须参数的及接口
+	// token 作为参数但是不是非必须参数的及接口
 	aApiRouter := apiRouter.Group("/", middleware.TokenAuthMiddleware(false))
 	aApiRouter.GET("/feed/", controller.Feed)
 
-	// todo 使用中间件做用户认证，需要token的API请添加到protectedApiRouter中
+	// 使用中间件做用户认证，需要token的API请添加到protectedApiRouter中
 	protectedApiRouter := apiRouter.Group("/", middleware.TokenAuthMiddleware(true))
 	protectedApiRouter.GET("/user/", controller.UserInfo)
 	protectedApiRouter.GET("/publish/list/", controller.PublishList)

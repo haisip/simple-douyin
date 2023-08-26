@@ -20,7 +20,7 @@ type User struct {
 	FavoriteCount   int32          `gorm:"default:0;not null" json:"favorite_count"`     // 收藏数
 	CreateAt        int64          `gorm:"autoCreateTime" json:"-"`                      // 忽略创建时间字段
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`                               // 忽略删除标志字段
-	IsFollow        bool           `gorm:"<-:false" json:"is_follow"`                    //true-已关注，false-未关注
+	IsFollow        bool           `gorm:"-" json:"is_follow"`                           //true-已关注，false-未关注
 
 	Videos          []Video     `gorm:"foreignKey:AuthorID" json:"-"` // 忽略视频关联字段
 	Comments        []Comment   `gorm:"foreignKey:UserID" json:"-"`   // 忽略评论关联字段
@@ -44,10 +44,11 @@ type Video struct {
 	Title         string         `gorm:"type:varchar(255);not null" json:"title"`     // 不为空
 	CreateAt      int64          `gorm:"autoCreateTime;index" json:"-"`               // 忽略创建时间字段
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`                              // 忽略删除标志字段                         // 0正常 1删除
-	IsFavorite    bool           `gorm:"<-:false" json:"is_favorite"`
+	IsFavorite    bool           `gorm:"-" json:"is_favorite"`
 
-	Author   User      `gorm:"foreignKey:AuthorID" json:"author"` // 关联用户表，外键为AuthorID
-	Comments []Comment `gorm:"foreignKey:VideoID" json:"-"`       // 关联评论表，外键为VideoID
+	Author       *User      `gorm:"foreignKey:AuthorID" json:"author"` // 关联用户表，外键为AuthorID
+	Comments     []Comment  `gorm:"foreignKey:VideoID" json:"-"`       // 关联评论表，外键为VideoID
+	FavoriteUser *UserVideo `gorm:"foreignKey:VideoID" json:"-"`
 }
 
 func (Video) TableName() string {
@@ -63,7 +64,7 @@ type Comment struct {
 	CreateAt  int64          `gorm:"autoCreateTime" json:"-"`                     // 忽略创建时间字段
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`                              // 0正常 1删除
 
-	User User `gorm:"foreignKey:UserID" json:"user"` // 关联用户表，外键为UserID
+	User *User `gorm:"foreignKey:UserID" json:"user"` // 关联用户表，外键为UserID
 }
 
 func (Comment) TableName() string {
@@ -77,8 +78,8 @@ type UserUser struct {
 	Followed int64 `gorm:"uniqueIndex:er_ed_ui;not null"`     // 外键、联合唯一索引er_ed_ui、不为空
 	Flag     bool  `gorm:"default:1;index;not null"`          // 字段为1表示关注 Follower 关注 Followed
 
-	FollowerUser User `gorm:"foreignKey:Follower" json:"-"` // 关联用户表，外键为Follower
-	FollowedUser User `gorm:"foreignKey:Followed" json:"-"` // 关联用户表，外键为Followed
+	FollowerUser *User `gorm:"foreignKey:Follower" json:"-"` // 关联用户表，外键为Follower
+	FollowedUser *User `gorm:"foreignKey:Followed" json:"-"` // 关联用户表，外键为Followed
 }
 
 func (UserUser) TableName() string {
@@ -92,8 +93,8 @@ type UserVideo struct {
 	VideoID int64 `gorm:"uniqueIndex:user_video_ui;not null"` // 联合唯一索引user_video_ui、不为空
 	Flag    bool  `gorm:"default:1;index;not null" json:"-"`  // 字段为1表示 UserID 喜欢 VideoID
 
-	User  User  `gorm:"foreignKey:UserID" json:"-"`  // 关联用户表，外键为UserID
-	Video Video `gorm:"foreignKey:VideoID" json:"-"` // 关联视频表，外键为VideoID
+	User  *User  `gorm:"foreignKey:UserID" json:"-"`  // 关联用户表，外键为UserID
+	Video *Video `gorm:"foreignKey:VideoID" json:"-"` // 关联视频表，外键为VideoID
 }
 
 func (UserVideo) TableName() string {

@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"gorm.io/gorm"
 )
 import dbPackage "simple-douyin/db"
@@ -18,7 +17,6 @@ func init() {
 }
 
 func CreateTables() error {
-	fmt.Println(db)
 	return db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4").
 		AutoMigrate(&User{}, &Comment{}, &Video{}, &UserUser{}, &UserVideo{})
 }

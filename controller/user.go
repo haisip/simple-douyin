@@ -108,17 +108,13 @@ func UserInfo(c *gin.Context) {
 	currentUserID := c.GetInt64("user_id")
 
 	var targetUser model.User
-	if err := db.DB.Table("user").
-		Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").
-		Joins("LEFT JOIN user_user AS uu ON uu.followed = ?  AND uu.follower = ?", targetUserID, currentUserID).
-		Where("user.id = ?", targetUserID).
-		First(&targetUser).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, Response{StatusCode: 1, StatusMsg: "User not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+	if err := db.DB.Preload("Followers", "follower = ? ", currentUserID).
+		First(&targetUser, targetUserID).Error; err != nil {
+		c.JSON(http.StatusNotFound, Response{StatusCode: 1, StatusMsg: "User not found"})
 		return
+	}
+	if len(targetUser.Followers) > 0 {
+		targetUser.IsFollow = targetUser.Followers[0].Flag
 	}
 
 	c.JSON(http.StatusOK, UserInfoResponse{

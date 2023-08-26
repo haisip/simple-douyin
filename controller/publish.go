@@ -91,17 +91,24 @@ func PublishList(c *gin.Context) {
 
 	videoArr := make([]model.Video, 10)
 	if err := db.DB.Table("video").
-		Preload("Author", func(db *gorm.DB) *gorm.DB {
-			return db.
-				Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").
-				Joins("LEFT JOIN user_user AS uu ON  uu.followed = user.id  AND uu.follower = ?", currentUserID)
-		}).
+		Preload("Author").
+		Preload("Author.Followers", "follower = ? ", currentUserID). // 加载用户的喜欢
+		Preload("FavoriteUser", "user_id=?", currentUserID).         // 加载用户喜欢视频字段
+		Select("video.*").
 		Order("video.create_at DESC").
-		Where("video.author_id = ?", targetUserID).
 		Debug().
 		Find(&videoArr).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return
+	}
+
+	for i, video := range videoArr {
+		if video.FavoriteUser != nil {
+			videoArr[i].IsFavorite = video.FavoriteUser.Flag
+		}
+		if video.Author != nil && len(video.Author.Followers) > 0 {
+			videoArr[i].Author.IsFollow = video.Author.Followers[0].Flag
+		}
 	}
 
 	c.JSON(http.StatusOK, FeedResponse{

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"net/http"
 	"simple-douyin/db"
 	"simple-douyin/model"
@@ -13,13 +12,13 @@ import (
 var maxVideoNum = 30
 
 func Feed(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	currentUserID, _ := c.Get("user_id")
 	lastTimeStr := c.Query("latest_time")
 
 	lastTime, _ := strconv.ParseInt(lastTimeStr, 10, 64)
 
 	videoArr := make([]model.Video, 30)
-	if userID == nil {
+	if currentUserID == nil {
 		query := db.DB.Table("video").Preload("Author").
 			Order("video.create_at DESC").
 			Limit(maxVideoNum)
@@ -32,14 +31,12 @@ func Feed(c *gin.Context) {
 		}
 	} else {
 		query := db.DB.Table("video").
-			Joins("LEFT JOIN user_video AS uv ON video.id = uv.video_id AND uv.user_id = ? AND uv.flag = 1", userID).
-			Preload("Author", func(db *gorm.DB) *gorm.DB {
-				return db.
-					Select("user.*, CASE WHEN uu.flag = 1 THEN true ELSE false END AS is_follow").
-					Joins("LEFT JOIN user_user AS uu ON  uu.followed = user.id  AND uu.follower = ?", userID)
-			}).
-			Select("video.*, uv.flag AS is_favorite").
+			Preload("Author").
+			Preload("Author.Followers", "follower = ? ", currentUserID). // 加载用户的喜欢
+			Preload("FavoriteUser", "user_id=?", currentUserID).         // 加载用户喜欢视频字段
+			Select("video.*").
 			Order("video.create_at DESC").
+			Debug().
 			Limit(maxVideoNum)
 		if lastTime > 0 {
 			query = query.Where("video.create_at > ?", lastTime)
@@ -49,6 +46,15 @@ func Feed(c *gin.Context) {
 			Find(&videoArr).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 			return
+		}
+	}
+
+	for i, video := range videoArr {
+		if video.FavoriteUser != nil {
+			videoArr[i].IsFavorite = video.FavoriteUser.Flag
+		}
+		if video.Author != nil && len(video.Author.Followers) > 0 {
+			videoArr[i].Author.IsFollow = video.Author.Followers[0].Flag
 		}
 	}
 

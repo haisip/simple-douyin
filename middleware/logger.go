@@ -9,21 +9,28 @@ import (
 )
 
 func InitGinLogWriter() {
-	_, err := os.Stat("./log/http.log")
+	logDir := "./log"
+	logFilePath := logDir + "/http.log"
+
+	_, err := os.Stat(logFilePath)
 	if os.IsNotExist(err) {
-		create, err := os.Create("./log/http.log")
+		if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+			panic(err)
+		}
+		create, err := os.Create(logFilePath)
 		if err != nil {
 			panic(err)
 		}
 		gin.DefaultWriter = create
 	} else {
-		file, err := os.OpenFile("./log/http.log", os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+		file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 		if err != nil {
 			panic(err)
 		}
-		//gin.DefaultWriter = file
+		// gin.DefaultWriter = file  // todo 只打印到文件中，在程序允许的时候添加参数设置
 		gin.DefaultWriter = io.MultiWriter(os.Stdout, file)
 	}
+
 }
 
 func LogToFileFormatter() gin.LogFormatter {

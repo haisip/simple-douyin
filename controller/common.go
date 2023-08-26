@@ -1,6 +1,18 @@
 package controller
 
-import "simple-douyin/model"
+import (
+	"simple-douyin/config"
+	"simple-douyin/model"
+)
+
+var (
+	staticBaseUrl string
+)
+
+func init() {
+	configLocal := config.GetConfig()
+	staticBaseUrl = configLocal.StaticBaseUrl
+}
 
 type Response struct {
 	StatusCode int32  `json:"status_code"`

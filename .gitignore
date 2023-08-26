@@ -7,6 +7,8 @@
 .idea/
 /config/config.json
 public/*
+log/*
+/log/
 *.log
 
 # User-specific stuff

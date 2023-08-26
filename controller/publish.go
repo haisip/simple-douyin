@@ -6,30 +6,19 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"path/filepath"
-	"simple-douyin/config"
 	"simple-douyin/db"
 	"simple-douyin/model"
 	"time"
 )
 
-var (
-	staticBaseUrl string
-)
-
-func init() {
-	configLocal := config.GetConfig()
-	staticBaseUrl = configLocal.StaticBaseUrl
-}
-
 func Publish(c *gin.Context) {
-	// todo 保存视频到静态目录，保存到数据库（新建video字段、user_video、更新user表作品数量）
+	// 保存视频到静态目录，保存到数据库（新建video字段、user_video、更新user表作品数量）
 	currentUserID := c.GetInt64("user_id")
 	title := c.PostForm("title")
 	if title == "" {
 		c.JSON(http.StatusBadRequest, Response{StatusCode: 1, StatusMsg: "miss title"})
 		return
 	}
-
 	data, err := c.FormFile("data")
 	if err != nil {
 		c.JSON(http.StatusOK, Response{
@@ -60,7 +49,7 @@ func Publish(c *gin.Context) {
 	tx := db.DB.Begin()
 	if err := tx.Create(&model.Video{
 		AuthorID: currentUserID,
-		PlayURL:  staticBaseUrl + finalName,
+		PlayURL:  finalName,
 		CoverURL: "",
 		Title:    title,
 	}).Error; err != nil {
@@ -102,12 +91,14 @@ func PublishList(c *gin.Context) {
 		return
 	}
 
-	for i, video := range videoArr {
-		if video.FavoriteUser != nil {
-			videoArr[i].IsFavorite = video.FavoriteUser.Flag
+	for i := range videoArr {
+		video := &videoArr[i]
+		video.PlayURL = staticBaseUrl + video.PlayURL
+		if video.FavoriteUser != nil { // 用户是否喜欢这个视频
+			video.IsFavorite = video.FavoriteUser.Flag
 		}
-		if video.Author != nil && len(video.Author.Followers) > 0 {
-			videoArr[i].Author.IsFollow = video.Author.Followers[0].Flag
+		if video.Author != nil && len(video.Author.Followers) > 0 { // 用户是否关注作者
+			video.Author.IsFollow = video.Author.Followers[0].Flag
 		}
 	}
 

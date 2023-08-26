@@ -9,7 +9,9 @@ import (
 	"time"
 )
 
-var maxVideoNum = 30
+var (
+	maxVideoNum = 30
+)
 
 func Feed(c *gin.Context) {
 	currentUserID, _ := c.Get("user_id")
@@ -36,7 +38,6 @@ func Feed(c *gin.Context) {
 			Preload("FavoriteUser", "user_id=?", currentUserID).         // 加载用户喜欢视频字段
 			Select("video.*").
 			Order("video.create_at DESC").
-			Debug().
 			Limit(maxVideoNum)
 		if lastTime > 0 {
 			query = query.Where("video.create_at > ?", lastTime)
@@ -49,12 +50,14 @@ func Feed(c *gin.Context) {
 		}
 	}
 
-	for i, video := range videoArr {
-		if video.FavoriteUser != nil {
-			videoArr[i].IsFavorite = video.FavoriteUser.Flag
+	for i := range videoArr {
+		video := &videoArr[i]
+		video.PlayURL = staticBaseUrl + video.PlayURL
+		if video.FavoriteUser != nil { // 用户是否喜欢这个视频
+			video.IsFavorite = video.FavoriteUser.Flag
 		}
-		if video.Author != nil && len(video.Author.Followers) > 0 {
-			videoArr[i].Author.IsFollow = video.Author.Followers[0].Flag
+		if video.Author != nil && len(video.Author.Followers) > 0 { // 用户是否关注作者
+			video.Author.IsFollow = video.Author.Followers[0].Flag
 		}
 	}
 

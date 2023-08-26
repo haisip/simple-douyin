@@ -1,11 +1,12 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"simple-douyin/db"
 	"simple-douyin/model"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CommentListResponse struct {
@@ -19,56 +20,86 @@ type CommentActionResponse struct {
 }
 
 func CommentAction(c *gin.Context) {
-	// todo 评论操作
-	// todo 将评论添加到对应的数据库
-	// todo 视频表中 评论数+1
 	actionType := c.Query("action_type")
 	videoID := c.Query("video_id")
-	videoId, _ := strconv.ParseInt(videoID, 10, 64) // todo 判断是否符合规范，这里没做任何处理
-	userID, _ := c.Get("user_id")
-	userId := userID.(int64)
-
-	if actionType == "1" {
-		// todo 发布评论
-		content := c.Query("comment_text") // todo 做参数合法判断
-		comment := model.Comment{UserID: userId, VideoID: videoId, Content: content}
-		if err := db.DB.Create(&comment).Error; err == nil {
-			c.JSON(http.StatusOK, CommentActionResponse{
-				Response: Response{StatusCode: 0},
-				Comment:  comment,
-			})
-		} else {
-			c.JSON(http.StatusBadRequest, err.Error()) // 插入失败
-			return
-		}
-		c.JSON(http.StatusOK, Response{StatusCode: 0})
-	} else if actionType == "2" {
-		// todo 删除评论
-		c.JSON(http.StatusOK, Response{StatusCode: 0})
-	} else {
+	videoId, err := strconv.ParseInt(videoID, 10, 64)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, "video_id value error")
 		return
 	}
 
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusBadRequest, "user_id not provided")
+		return
+	}
+
+	userId, ok := userID.(int64)
+	if !ok {
+		c.JSON(http.StatusBadRequest, "user_id value error")
+		return
+	}
+
+	switch actionType {
+	case "1": // 发布评论
+		content := c.Query("comment_text")
+		if content == "" {
+			c.JSON(http.StatusBadRequest, "comment_text cannot be empty")
+			return
+		}
+
+		comment := model.Comment{UserID: userId, VideoID: videoId, Content: content}
+		if err := db.DB.Create(&comment).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		c.JSON(http.StatusOK, CommentActionResponse{
+			Response: Response{StatusCode: 0},
+			Comment:  comment,
+		})
+
+	case "2": // 删除评论
+		commentID := c.Query("comment_id")
+		commentId, err := strconv.ParseInt(commentID, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, "comment_id value error")
+			return
+		}
+
+		if err := db.DB.Delete(&model.Comment{}, commentId).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		c.JSON(http.StatusOK, Response{StatusCode: 0})
+
+	default:
+		c.JSON(http.StatusBadRequest, "invalid action_type")
+	}
 }
 
 func CommentList(c *gin.Context) {
-	// todo 获取评论列表
-	videoID := c.Query("video_id") // todo 判断是否符合规范，这里没做任何处理
+	videoID := c.Query("video_id")
+	videoId, err := strconv.ParseInt(videoID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "video_id value error")
+		return
+	}
 
 	var comments []model.Comment
-	if err := db.DB.Preload("User"). // todo 优化异常处理
-						Where("video_id = ?", videoID).
-						Order("create_at DESC").
-						Debug().
-						Find(&comments).
-						Error; err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
+	if err := db.DB.Preload("User").
+		Where("video_id = ?", videoId).
+		Order("create_at DESC").
+		Debug().
+		Find(&comments).
+		Error; err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
-	} else {
-		c.JSON(http.StatusOK, CommentListResponse{
-			Response:    Response{StatusCode: 0},
-			CommentList: comments,
-		})
 	}
+
+	c.JSON(http.StatusOK, CommentListResponse{
+		Response:    Response{StatusCode: 0},
+		CommentList: comments,
+	})
 }

@@ -13,8 +13,8 @@ import (
 )
 
 type UsrnPwdRequest struct {
-	Username string `form:"username" binding:"required,min=5,max=64"`
-	Password string `form:"password" binding:"required,min=5,max=64"`
+	Username string `form:"username" binding:"required"`
+	Password string `form:"password" binding:"required"`
 }
 
 type UserTokenResponse struct {
@@ -25,7 +25,8 @@ type UserTokenResponse struct {
 
 func Login(c *gin.Context) {
 	var loginRequest UsrnPwdRequest
-	if err := c.BindQuery(&loginRequest); err != nil {
+	if err := c.ShouldBindQuery(&loginRequest); err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "parameter mismatch"})
 		return
 	}
 
@@ -71,7 +72,8 @@ func Login(c *gin.Context) {
 
 func Register(c *gin.Context) {
 	var registerRequest UsrnPwdRequest
-	if err := c.BindQuery(&registerRequest); err != nil {
+	if err := c.ShouldBindQuery(&registerRequest); err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "parameter mismatch"})
 		return
 	}
 

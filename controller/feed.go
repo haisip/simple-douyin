@@ -25,7 +25,7 @@ func Feed(c *gin.Context) {
 			Order("video.create_at DESC").
 			Limit(maxVideoNum)
 		if lastTime > 0 {
-			query = query.Where("video.create_at > ?", lastTime)
+			query = query.Where("video.create_at < ?", lastTime)
 		}
 		if err := query.Find(&videoArr).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})

@@ -2,7 +2,7 @@ package utils
 
 import "regexp"
 
-var (
+const (
 	usernamePattern = "^[a-zA-Z0-9]{5,64}$" // 英文数字长度为 5-64
 	passwordPattern = "^[\x21-\x7E]{5,64}$" // ascii字符长度为 5-64
 )

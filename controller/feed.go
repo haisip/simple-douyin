@@ -34,7 +34,7 @@ func Feed(c *gin.Context) {
 	} else {
 		query := db.DB.Table("video").
 			Preload("Author").
-			Preload("Author.Followers", "follower = ? ", currentUserID). // 加载用户的喜欢
+			Preload("Author.Followers", "follower = ? ", currentUserID). // 加载用户的粉丝
 			Preload("FavoriteUser", "user_id=?", currentUserID).         // 加载用户喜欢视频字段
 			Select("video.*").
 			Order("video.create_at DESC").

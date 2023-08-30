@@ -8,14 +8,15 @@ import (
 	"path/filepath"
 	"simple-douyin/db"
 	"simple-douyin/model"
+	"strconv"
 	"time"
 )
 
 func Publish(c *gin.Context) {
-	// 保存视频到静态目录，保存到数据库（新建video字段、user_video、更新user表作品数量）
+	// 保存视频到静态目录，保存到数据库（新建video记录、更新user表作品数量）
 	currentUserID := c.GetInt64("user_id")
 	title := c.PostForm("title")
-	if title == "" {
+	if title == "" || len(title) > 200 {
 		c.JSON(http.StatusBadRequest, Response{StatusCode: 1, StatusMsg: "miss title"})
 		return
 	}
@@ -35,7 +36,8 @@ func Publish(c *gin.Context) {
 		return
 	}
 
-	finalName := fmt.Sprintf("%d_%s", time.Now().Unix(), filepath.Base(data.Filename)) // 使用时间戳防止重复
+	// 使用用户名、时间戳防止文件名重复
+	finalName := fmt.Sprintf("%d_%d_%s", currentUserID, time.Now().UnixMilli(), filepath.Base(data.Filename))
 	savePath := filepath.Join("./public/", finalName)
 
 	if err := c.SaveUploadedFile(data, savePath); err != nil {
@@ -57,7 +59,11 @@ func Publish(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, "create error")
 		return
 	}
-	if err := tx.Model(&model.User{}).Where("id = ?", currentUserID).Update("work_count", gorm.Expr("work_count + ?", 1)).Error; err != nil {
+	if err := tx.
+		Model(&model.User{}).
+		Where("id = ?", currentUserID).
+		Update("work_count", gorm.Expr("work_count + ?", 1)).
+		Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, "update error")
 		return
@@ -71,21 +77,22 @@ func Publish(c *gin.Context) {
 }
 
 func PublishList(c *gin.Context) {
-	currentUserID, _ := c.Get("user_id")
-	targetUserID := c.Query("user_id")
-	if targetUserID == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "missing query param ot user_id"})
+	currentUserID := c.GetInt64("user_id")
+	targetUserIDStr := c.Query("user_id")
+	targetUserID, err := strconv.ParseInt(targetUserIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id"})
 		return
 	}
 
 	videoArr := make([]model.Video, 10)
 	if err := db.DB.Table("video").
 		Preload("Author").
-		Preload("Author.Followers", "follower = ? ", currentUserID). // 加载用户的喜欢
+		Preload("Author.Followers", "follower = ? ", currentUserID). // 加载用户的粉丝
 		Preload("FavoriteUser", "user_id=?", currentUserID).         // 加载用户喜欢视频字段
 		Select("video.*").
 		Order("video.create_at DESC").
-		Debug().
+		Where("video.author_id = ?", targetUserID).
 		Find(&videoArr).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return

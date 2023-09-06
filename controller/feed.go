@@ -6,7 +6,6 @@ import (
 	"simple-douyin/db"
 	"simple-douyin/model"
 	"strconv"
-	"time"
 )
 
 var (
@@ -40,7 +39,7 @@ func Feed(c *gin.Context) {
 			Order("video.create_at DESC").
 			Limit(maxVideoNum)
 		if lastTime > 0 {
-			query = query.Where("video.create_at > ?", lastTime)
+			query = query.Where("video.create_at < ?", lastTime)
 		}
 
 		if err := query.
@@ -50,13 +49,21 @@ func Feed(c *gin.Context) {
 		}
 	}
 
+	var nextTime int64
+
+	if len(videoArr) > 0 {
+		nextTime = videoArr[len(videoArr)-1].CreateAt
+	}
+
 	for i := range videoArr {
 		video := &videoArr[i]
 		video.PlayURL = staticBaseUrl + video.PlayURL
-		if video.FavoriteUser != nil { // 用户是否喜欢这个视频
+
+		if video.FavoriteUser != nil {
 			video.IsFavorite = video.FavoriteUser.Flag
 		}
-		if video.Author != nil && len(video.Author.Followers) > 0 { // 用户是否关注作者
+
+		if video.Author != nil && len(video.Author.Followers) > 0 {
 			video.Author.IsFollow = video.Author.Followers[0].Flag
 		}
 	}
@@ -64,6 +71,6 @@ func Feed(c *gin.Context) {
 	c.JSON(http.StatusOK, FeedResponse{
 		Response:  Response{StatusCode: 0},
 		VideoList: videoArr,
-		NextTime:  time.Now().Unix(),
+		NextTime:  nextTime,
 	})
 }
